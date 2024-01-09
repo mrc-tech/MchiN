@@ -23,7 +23,7 @@ classdef MchiNstrisce3 < handle
         % proprietà dei materiali:
         fc % resistenza calcestruzzo
         fy % resistenza acciaio
-        epscy, epscu % deformazione di snervamento e ultima del CLS
+        epsc0, epscu % deformazione di snervamento e ultima del CLS
         epssy, epssu % deformazione di snervamento e ultima dell'acciaio
         % costanti della sezione:
         Area    % Area della Sezione
@@ -35,18 +35,23 @@ classdef MchiNstrisce3 < handle
         function obj = MchiNstrisce3(hmax,CLS,Acc)
             % costruttore della classe
             obj.hmax = hmax;
-            obj.legameCLS = CLS;
-            obj.legameAcc = Acc;
+            if nargin == 1
+                obj.legameCLS = @ParabRett;
+                obj.legameAcc = @ElastPlast;
+            else
+                obj.legameCLS = CLS;
+                obj.legameAcc = Acc;
+            end
         end
         
         function addLayer(obj,h,b,t)
             % aggiunge tanti layer alti massimo h_max fino a creare la patch desiderata
             y = 0;
-            for i=1:size(obj.layer,1); y = y + obj.layer(i,2); end
+            for i=1:size(obj.layer,1); y = y + obj.layer(i,2); end % prende come y la somma delle altezze dei layer (aggiunge il nuovo layer "in cima" agli altri)
             sum = 0;
             while (h - (sum+obj.hmax) > 0)
-                bj = b + (t-b)/(y+h)*(y+sum);
-                tj = b + (t-b)/(y+h)*(y+sum+obj.hmax);
+                bj = b + (t-b)/h*(sum);
+                tj = b + (t-b)/h*(sum+obj.hmax);
                 if size(obj.layer,1) > 0; obj.layer = [obj.layer; (obj.layer(size(obj.layer,1),1)+obj.layer(size(obj.layer,1),2)) obj.hmax bj tj];
                 else; obj.layer = [obj.layer; 0 obj.hmax b tj]; end % aggiunge il primo layer
                 sum = sum + obj.hmax;
@@ -62,19 +67,19 @@ classdef MchiNstrisce3 < handle
             
         end
         
-        function defineMaterials(obj, fc, fy, eps_cy, eps_cu, eps_sy, eps_su)
+        function defineMaterials(obj, fc, fy, eps_c0, eps_cu, eps_sy, eps_su)
             % aggiunge le proprietà dei materiali
             if nargin < 4
                 obj.fc = -abs(fc); % negativo: compressione
                 obj.fy = fy;
-                obj.epscy = -0.002; % negativo: accorciamento
+                obj.epsc0 = -0.002; % negativo: accorciamento
                 obj.epscu = -0.0035;
                 obj.epssy = 0.002;
                 obj.epssu = 0.03; % il massimo a cui sono arrivato è il 6% (le NTC mi pare prescrivano l'1%)
             else
                 obj.fc = -abs(fc);
                 obj.fy = fy;
-                obj.epscy = -abs(eps_cy);
+                obj.epsc0 = -abs(eps_c0);
                 obj.epscu = -abs(eps_cu);
                 obj.epssy = eps_sy;
                 obj.epssu = eps_su;
@@ -107,7 +112,7 @@ classdef MchiNstrisce3 < handle
             % (eps_b) e al lembo superiore (eps_t)
             
             % forze nei layers:
-            Flayer = obj.legameCLS((eps_t-eps_b)*obj.layersProp(:,2)/obj.H+eps_b, obj.epscy,obj.epscu,obj.fc) .* obj.layersProp(:,1);
+            Flayer = obj.legameCLS((eps_t-eps_b)*obj.layersProp(:,2)/obj.H+eps_b, obj.epsc0,obj.epscu,obj.fc) .* obj.layersProp(:,1);
             % forze nelle barre:
             Frebar = obj.legameAcc((eps_t-eps_b)*obj.rebar(:,1)/obj.H+eps_b, obj.epssy,obj.epssu,obj.fy) .* obj.rebar(:,2);
             
@@ -296,9 +301,9 @@ classdef MchiNstrisce3 < handle
             % NUOVA FORMULAZIONE SENZA -yg NELLA FUNZIONE "deformazione"
             % ----------------------------------------------------------
             
-            N = sum(obj.legameCLS(obj.deformazione(eps0,chi,obj.layersProp(:,2)), obj.epscy,obj.epscu,obj.fc) .* obj.layersProp(:,1)) + ...
+            N = sum(obj.legameCLS(obj.deformazione(eps0,chi,obj.layersProp(:,2)), obj.epsc0,obj.epscu,obj.fc) .* obj.layersProp(:,1)) + ...
                 sum(obj.legameAcc(obj.deformazione(eps0,chi,obj.rebar(:,1)), obj.epssy,obj.epssu,obj.fy) .* obj.rebar(:,2));
-            M = sum(obj.legameCLS(obj.deformazione(eps0,chi,obj.layersProp(:,2)), obj.epscy,obj.epscu,obj.fc) .* (obj.layersProp(:,2)-obj.yg) .* obj.layersProp(:,1)) + ...
+            M = sum(obj.legameCLS(obj.deformazione(eps0,chi,obj.layersProp(:,2)), obj.epsc0,obj.epscu,obj.fc) .* (obj.layersProp(:,2)-obj.yg) .* obj.layersProp(:,1)) + ...
                 sum(obj.legameAcc(obj.deformazione(eps0,chi,obj.rebar(:,1)), obj.epssy,obj.epssu,obj.fy) .* (obj.rebar(:,1)-obj.yg) .* obj.rebar(:,2));
         end
         
@@ -600,18 +605,18 @@ classdef MchiNstrisce3 < handle
         
         function initCirc(obj,D,db,rhotot,c)
             % inizializza una sezione circolare
-            if nargin < 6; c = 0.03; end
+            if nargin < 5; c = 0.03; end
             AreaBarra = pi/4 * db^2;
-            numeroBarre = round(rhotot * (D^2)/(db^2));
+            numeroBarre = round(rhotot * (D/db)^2); % (D/db)^2 invece di (D^2)/(db^2) per problemi numerici se db è piccolo?
             
-            hs = D/50;
+            hs = min(D/10, obj.hmax); % il minimo per evitare problemi se hmax < D/50
             
-            for y=linspace(0,D-hs,D/hs)
+            for y=linspace(0, D-hs, D/hs)
                 thetab = acos(1 - 2/D*y);
                 b = D*sin(thetab);
                 thetat = acos(1 - 2/D*(y+hs));
                 t = D*sin(thetat);
-                obj.addLayer(hs,real(b),real(t));
+                obj.addLayer(hs, real(b), real(t));
             end
             for theta=linspace(0,pi,(numeroBarre+1)/2)
                 y = D/2 - ((D-2*c)/2)*cos(theta);
@@ -662,7 +667,7 @@ classdef MchiNstrisce3 < handle
                 t = obj.layer(i,4); % larghezza superiore del layer
                 Xp = [-b/2 b/2 t/2 -t/2];
                 Yp = [y y y+h y+h];
-                patch(Xp,Yp,[0.8 0.8 0.8]);
+                patch(Xp,Yp,[0.8 0.8 0.8], 'facealpha',0.9);
                 hold on;
             end
             
@@ -753,7 +758,51 @@ function [N,M] = controllaLayer(sez, eps_inf, eps_sup, i)
 end
 
 
+% #########################################################################
+%                    LEGAMI COSTITUTIVI
+% #########################################################################
 
+function sigma = ElastPlast(eps,epsy,epsu,smax)
+    %legame costitutivo elastoplastico perfetto
+    
+%     %acciaio B450C (NTC2018):
+%     epsy = 0.002;
+%     epsu = 0.010;
+%     smax = 391; %MPa
+    
+    sigma = zeros(size(eps));
+    for i=1:size(eps)
+        if (eps(i) <= -epsu);		sigma(i) = 0.0;
+        elseif (eps(i) <= -epsy);	sigma(i) = -smax;
+        elseif (eps(i) <= epsy); 	sigma(i) = eps(i) * (smax/epsy); 
+        elseif (eps(i) <= epsu); 	sigma(i) = smax; 
+        elseif (eps(i) > epsu); 	sigma(i) = 0.0;
+        end
+    end
+end
+
+% -------------------------------------------------------------------------
+
+function sigma = ParabRett(eps,epsy,epsu,smax)
+    %legame costitutivo CLS NTC2018
+    %eps è negativo di compressione
+    
+%     epsy = -0.0020;
+%     epsu = -0.0035;
+%     smax = -30; %MPa
+    
+    sigma = zeros(size(eps));
+    for i=1:size(eps)
+        if (eps(i) > 0); sigma(i) = 0; %non resistente a trazione
+        elseif (eps(i) >= epsy); 	sigma(i) = smax * (2*eps(i)/epsy - (eps(i)*eps(i))/(epsy*epsy));
+        elseif (eps(i) >= epsu); 	sigma(i) = smax;
+        elseif (eps(i) < epsu);    sigma(i) = 0.0;
+        end
+    end
+end
+
+% #########################################################################
+% #########################################################################
 
 % TODO:
 % -----
@@ -772,5 +821,8 @@ end
 %   17/01/2021: Ho inserito la funzione "curvaMchi3" che migliora "curvaMchi2"
 %   21/01/2021: Creato la versione 2 inserendo "integrateStrain", "controllaLayer" e "dividiLayer" 
 %   22/02/2021: Aggiunta la visualizzazione delle armature come "cerchietti" nella funzione "plotSection()"
-%   09/01/2024: Creato i progetto GitHub e messi insieme gli script che avevo
+%   08/01/2024: Creato i progetto GitHub e messi insieme gli script che avevo
+%   09/01/2024: Ho controllato la sezione circolare e ho messo hs = min(D/Nlayers, hmax)
+%               Aggiustata la funzione addLayer eliminando y dal calcolo di bj e tj
+%               Aggiunti i legami costitutivi standard dentro questo file
 %   
