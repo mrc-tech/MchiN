@@ -717,6 +717,114 @@ classdef MchiNstrisce3 < handle
             obj.layersProp = [obj.layersProp(1:i,:); [Areal, ygl]; obj.layersProp(i+1:end,:)];
         end
         
+		
+		% Funzioni da "MchiNstrisceSteel.m":
+		
+		% function [eps0,chi] = findEquilibrium(obj,N,M)
+            % %trova il profilo di deformazione che equilibria le azione
+            % %esterne N e M. Ha l'ipotesi di sezion piane che rimangono
+            % %piane anche dopo la deformazione quindi eps0 è la deformazione
+            % %in corrispondenza della fibra baricentrica e chi è la
+            % %curvatura.
+            % %usa il metodo di Newton-Raphson
+            
+            % Phi= [0; 0]; %vettore eps,chi
+            % err = 1; %errore che deve andare a zero
+            % tol = 1.e-10; %tolleranza
+            % delta = 1.e-8;
+            
+            % while err > tol
+                % %calcola il jacobiano
+                % JF(:,1) = (obj.F(Phi(1)+delta,Phi(2),N,M)-obj.F(Phi(1),Phi(2),N,M))/delta;
+                % JF(:,2) = (obj.F(Phi(1),Phi(2)+delta,N,M)-obj.F(Phi(1),Phi(2),N,M))/delta;
+                % %calcola lo step successivo
+                % Phi0=Phi;
+                % Phi = Phi0 - inv(JF) * (obj.F(Phi0(1),Phi0(2),N,M));
+                % %calcola l'errore
+                % err = norm(Phi - Phi0)/norm(Phi0);
+            % end
+            
+% %             [~,M] = obj.setStrain(Phi(1)-Phi(2)*obj.yg, Phi(1)+Phi(2)*(obj.H-obj.yg));
+            % eps0 = Phi(1);
+            % chi  = Phi(2);        
+            
+        % end
+		
+		
+		% function [M,phi,yn] = ultimatePoint(obj, N)
+            % %calcola il momento e la curvatura ultimi
+            
+            % if abs(N) > obj.fy*obj.Area; error('la sezione non può resistere a tale sforzo'); end
+            
+            % % fissato lo eps_top = epscu cambia eps_top fino a trovare N corretto (se la rottura è lato CLS)
+            % eps_sup = obj.epscu;
+            
+            % %trova un range per fare la bisezione:
+            % count = 0;
+            % eps_infP = obj.epscu; %l'ho scelto io sta sicuramente qua dentro...
+            % eps_infN = obj.epscu; %in questo intevallo (non può essere più compresso di così)
+            % eps_supP = obj.epscu; %nel caso si ha la rottura lato acciaio la bisezione va fatta sulla eps_sup
+            % eps_supN = obj.epscu;
+            % rottura_acciaio = 0;
+            % while obj.setStrain(eps_infP,eps_supP) < N
+                % eps_infP = eps_infP + 0.0001;
+                % %l'acciaio è arrivato a rottura, quindi si ha una rottura lato acciaio
+                % if eps_infP > obj.epssu
+                    % eps_infP = obj.epssu; %fissa eps_inf
+                    % eps_inf = eps_infP; %usa un solo eps_inf (fissato) per non confondere le idee...
+                    % eps_supP = eps_supP + 0.001;
+                    % rottura_acciaio = 1;
+                % end
+                % count = count + 1;
+                % if count > 1000; error('MchiNstrisce non è arrivato a convergenza'); end
+            % end
+% %             if rottura_acciaio; warning('rottura lato acciaio'); end
+            % if rottura_acciaio; logFile('MchiN::ultimatePoint: rottura lato acciaio'); end
+            
+            % %fa la bisezione
+            % err = [100 100 100];
+            % count = 0;
+            % if rottura_acciaio == 0
+                % %rottura del CLS:
+                % while ((abs(err(2)) > abs(0.000001 * N)) || (abs(eps_infP-eps_infN) > abs(0.0001*eps_infN))) %+0.000001 serve per non creare errori per N=0)
+                    % err = [(obj.setStrain(eps_infP,eps_sup) - N) (obj.setStrain((eps_infP+eps_infN)/2,eps_sup) - N) (obj.setStrain(eps_infN,eps_sup) - N)];
+                    % if err(1)*err(2) < 0
+                        % %la risultante è tra err(1) e err(2) (eps_infP è corretto)
+                        % eps_infN = (eps_infP+eps_infN)/2;
+                    % else
+                        % %la risultante è tra err(2) e err(3) (eps_infN è corretto)
+                        % eps_infP = (eps_infP+eps_infN)/2;
+                    % end
+                    % count = count + 1;
+                    % if count > 10000; error('MchiNstrisce non è arrivato a convergenza'); end
+                % end
+                % eps_inf = (eps_infP+eps_infN)/2;
+            % else
+                % %rottura dell'acciaio:
+                % while ((abs(err(2)) > abs(0.000001 * N)) || (abs(eps_supP-eps_supN) > abs(0.0001*eps_supN))) %+0.000001 serve per non creare errori per N=0)
+                    % err = [(obj.setStrain(eps_inf,eps_supP) - N) (obj.setStrain(eps_inf,(eps_supP+eps_supN)/2) - N) (obj.setStrain(eps_inf,eps_supN) - N)];
+                    % if err(1)*err(2) < 0
+                        % %la risultante è tra err(1) e err(2) (eps_supP è corretto)
+                        % eps_supN = (eps_supP+eps_supN)/2;
+                    % else
+                        % %la risultante è tra err(2) e err(3) (eps_supN è corretto)
+                        % eps_supP = (eps_supP+eps_supN)/2;
+                    % end
+                    % count = count + 1;
+                    % if count > 9000
+                        % disp('sta per fallire');
+                    % end
+                    % if count > 10000; error('MchiNstrisce non è arrivato a convergenza'); end
+                % end
+                % eps_sup = (eps_supP+eps_supN)/2;
+            % end
+            
+            % [~,M] = obj.setStrain(eps_inf,eps_sup);
+            % phi = (eps_inf-eps_sup)/obj.H; %compressione: negativa (la fibra superiore è compressa)
+            % yn = -eps_sup/(eps_inf-eps_sup) * obj.H;
+            % M = -M; %convenzione italiana
+        % end
+		
         
     end
     
