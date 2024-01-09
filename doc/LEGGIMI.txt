@@ -1,0 +1,11 @@
+PARE CHE LE SEZIONI CIRCOLARI NON FUNZIONINO CORRETTAMENTE (Discrepanza con VcaSLU)
+
+mannaggia!!! trovo sempre qualche discrepanza ed errori!!! mai una volta che va tutto liscio....
+
+
+
+
+
+
+fare uno script Python per eliminare gli accenti...
+in maniera tale che non devo sempre compilarlo
