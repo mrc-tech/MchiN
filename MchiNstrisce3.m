@@ -3,7 +3,7 @@
 %                          |  M-CHI-N STRISCE  |
 %                          +-------------------+
 %                          Autore: Andrea Marchi
-%                              Versione: 1.4
+%                              Versione: 1.7
 %                                09/01/2024
 %
 % In fondo al documento sono presenti il ToDo e il ChangeLog.
@@ -816,7 +816,7 @@ end
 
 % ChangeLog:
 % ----------
-%	13/01/2021: Ho modificato le funzioni "ultimatePoint" eliminando la ricerca iniziale del range e "Fint" eliminando il -yg nel calcolo dellal deformazione
+%   13/01/2021: Ho modificato le funzioni "ultimatePoint" eliminando la ricerca iniziale del range e "Fint" eliminando il -yg nel calcolo dellal deformazione
 %   16/01/2021: Ho eliminato "findEquilibrium" e "curvaMchi" che non erano usate da tempo
 %   17/01/2021: Ho inserito la funzione "curvaMchi3" che migliora "curvaMchi2"
 %   21/01/2021: Creato la versione 2 inserendo "integrateStrain", "controllaLayer" e "dividiLayer" 
