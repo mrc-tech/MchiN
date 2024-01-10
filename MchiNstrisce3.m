@@ -7,20 +7,20 @@
 %                                09/01/2024
 %
 % In fondo al documento sono presenti il ToDo e il ChangeLog.
-% Questa classe è basata sul codice "SeReS_strisce" di Andrea Marchi.
+% Questa classe Ã¨ basata sul codice "SeReS_strisce" di Andrea Marchi.
 % ########################################################################
 
 classdef MchiNstrisce3 < handle
     properties
         hmax % altezza massima del layer
-        layer % matrice dove ogni riga è un layer e le colonne sono: y, h, b_bot, b_top
-        rebar % matrice dove ogni riga è una barra e le colonne sono: y, As, mat_id
-%         materials % struttura che contiene le funzioni sigma(eps) dei materiali (ogni riga è un materiale differente)
+        layer % matrice dove ogni riga Ã¨ un layer e le colonne sono: y, h, b_bot, b_top
+        rebar % matrice dove ogni riga Ã¨ una barra e le colonne sono: y, As, mat_id
+%         materials % struttura che contiene le funzioni sigma(eps) dei materiali (ogni riga Ã¨ un materiale differente)
         legameCLS % legame sigma(eps) del CLS
         legameAcc % legame sigma(eps) dell'acciaio
-        % proprietà aggiuntive:
-        layersProp % ogni riga è un layer, le colonne sono: Area, ygl
-        % proprietà dei materiali:
+        % proprietÃ  aggiuntive:
+        layersProp % ogni riga Ã¨ un layer, le colonne sono: Area, ygl
+        % proprietÃ  dei materiali:
         fc % resistenza calcestruzzo
         fy % resistenza acciaio
         epsc0, epscu % deformazione di snervamento e ultima del CLS
@@ -68,14 +68,14 @@ classdef MchiNstrisce3 < handle
         end
         
         function defineMaterials(obj, fc, fy, eps_c0, eps_cu, eps_sy, eps_su)
-            % aggiunge le proprietà dei materiali
+            % aggiunge le proprietÃ  dei materiali
             if nargin < 4
                 obj.fc = -abs(fc); % negativo: compressione
                 obj.fy = fy;
                 obj.epsc0 = -0.002; % negativo: accorciamento
                 obj.epscu = -0.0035;
                 obj.epssy = 0.002;
-                obj.epssu = 0.03; % il massimo a cui sono arrivato è il 6% (le NTC mi pare prescrivano l'1%)
+                obj.epssu = 0.03; % il massimo a cui sono arrivato Ã¨ il 6% (le NTC mi pare prescrivano l'1%)
             else
                 obj.fc = -abs(fc);
                 obj.fy = fy;
@@ -88,7 +88,7 @@ classdef MchiNstrisce3 < handle
         
         function initgeo(obj)
             % calcola la geometria della sezione
-            % si prende in considerazione il fatto che sia composta tutta dello stesso materiale (in realtà dovrei SEMPRE omogeneizzare i layer [per ogni layer un coeff. di omogenizzazione n])
+            % si prende in considerazione il fatto che sia composta tutta dello stesso materiale (in realtÃ  dovrei SEMPRE omogeneizzare i layer [per ogni layer un coeff. di omogenizzazione n])
             obj.Area = 0;
             obj.Ix = 0;
             Sx = 0;
@@ -133,7 +133,7 @@ classdef MchiNstrisce3 < handle
             Nint = 0;
             Mint = 0;
             for i=1:size(obj.layer,1)
-%                 temp = obj; % fa una copia della sezione per il calcolo del layer (così lo può dividere quanto vuole senza ripercussioni) PARE NON FUNZIONARE
+%                 temp = obj; % fa una copia della sezione per il calcolo del layer (cosÃ¬ lo puÃ² dividere quanto vuole senza ripercussioni) PARE NON FUNZIONARE
                 old_layers = obj.layer;
                 old_prop   = obj.layersProp;
                 [N,M] = controllaLayer(obj,eps_inf,eps_sup,i);
@@ -151,20 +151,20 @@ classdef MchiNstrisce3 < handle
             % DA MIGLIORARE L'ALGORITMO!!!!!!! (vedi la procedura usata per
             % "ultimatePoint" [di MchiNsteel??])
             
-            if N < obj.fc*obj.Area; error('la sezione non può resistere a tale compressione'); end
-            if N > obj.fy*sum(obj.rebar(:,2)); error('la sezione non può resistere a tale trazione'); end
+            if N < obj.fc*obj.Area; error('la sezione non puÃ² resistere a tale compressione'); end
+            if N > obj.fy*sum(obj.rebar(:,2)); error('la sezione non puÃ² resistere a tale trazione'); end
             
             % fissato lo eps_inf = epssy cambia eps_top fino a trovare N corretto:
             eps_inf = obj.epssy;
             
             % trova un range per fare la bisezione:
             count = 0;
-            eps_supP = obj.epssy; % l'ho scelto io (l'N iniziale può essere solamente minore)
+            eps_supP = obj.epssy; % l'ho scelto io (l'N iniziale puÃ² essere solamente minore)
             eps_supN = obj.epssy; % valore Negativo
             while obj.setStrain(eps_inf,eps_supN) > N
                 eps_supN = eps_supN - 0.001;
                 count = count + 1;
-                if count > 1000; error('MchiNstrisce non è arrivato a convergenza'); end
+                if count > 1000; error('MchiNstrisce non Ã¨ arrivato a convergenza'); end
             end
             
             % fa la bisezione:
@@ -173,46 +173,46 @@ classdef MchiNstrisce3 < handle
             while ((abs(err(2)) > abs(0.005 * N)) )%|| (abs(eps_supP-eps_supN) > abs(0.0001*eps_supN))) %+0.000001 serve per non creare errori per N=0
                 err = [(obj.setStrain(eps_inf,eps_supP) - N) (obj.setStrain(eps_inf,(eps_supP+eps_supN)/2) - N) (obj.setStrain(eps_inf,eps_supN) - N)];
                 if err(1)*err(2) < 0
-                    % la risultante è tra err(1) e err(2) (eps_supP è corretto)
+                    % la risultante Ã¨ tra err(1) e err(2) (eps_supP Ã¨ corretto)
                     eps_supN = (eps_supP+eps_supN)/2;
                     
                 else
-                    % la risultante è tra err(2) e err(3) (eps_supN è corretto)
+                    % la risultante Ã¨ tra err(2) e err(3) (eps_supN Ã¨ corretto)
                     eps_supP = (eps_supP+eps_supN)/2;
                 end
                 count = count + 1;
-                if count > 1000; error('MchiNstrisce non è arrivato a convergenza'); end
+                if count > 1000; error('MchiNstrisce non Ã¨ arrivato a convergenza'); end
             end
             
             eps_sup = (eps_supP+eps_supN)/2;
             
             [~,M] = obj.setStrain(eps_inf,eps_sup);
-            phi = (eps_inf-eps_sup)/obj.H; % compressione: negativa (la fibra superiore è compressa)
+            phi = (eps_inf-eps_sup)/obj.H; % compressione: negativa (la fibra superiore Ã¨ compressa)
             yn = -eps_sup/(eps_inf-eps_sup) * obj.H;
             M = -M; % convenzione italiana
         end
         
         function [M,phi,yn] = ultimatePoint(obj, N)
             % calcola il momento e la curvatura ultimi
-            % il valore di N è considerato negativo di compressione
+            % il valore di N Ã¨ considerato negativo di compressione
             
-            if N < obj.fc*obj.Area; error('la sezione non può resistere a tale compressione'); end
-            if N > obj.fy*sum(obj.rebar(:,2)); error('la sezione non può resistere a tale trazione'); end
+            if N < obj.fc*obj.Area; error('la sezione non puÃ² resistere a tale compressione'); end
+            if N > obj.fy*sum(obj.rebar(:,2)); error('la sezione non puÃ² resistere a tale trazione'); end
             
             % calcola lo sforzo normale interno della sezione nello stato di
             % rottura limite (armature a eps_su e calcestruzzo a eps_cu) e
-            % se è comunque minore dello sforzo agente N (quindi se la
-            % sezione è più compressa dello sforzo normale agente) vuol dire
+            % se Ã¨ comunque minore dello sforzo agente N (quindi se la
+            % sezione Ã¨ piÃ¹ compressa dello sforzo normale agente) vuol dire
             % che l'asse neutro deve "alzarsi" e quindi deve aumentare la
-            % epsilon superiore (aumentare perchè prima era negativa:
+            % epsilon superiore (aumentare perchÃ¨ prima era negativa:
             % -0.35%) Questo ultimo caso porta ad una rottura lato acciaio
-            % (ovvero che è fissa eps_inf e la bisezione si fa su eps_sup)
+            % (ovvero che Ã¨ fissa eps_inf e la bisezione si fa su eps_sup)
             if obj.setStrain(obj.epssu,obj.epscu) > N
-                % si ha una rottura lato calcestruzzo, quindi è tenuto fisso eps_sup = eps_cu
+                % si ha una rottura lato calcestruzzo, quindi Ã¨ tenuto fisso eps_sup = eps_cu
                 rottura_acciaio = 0;
                 eps_sup = obj.epscu; % deformazione ultima del calcestruzzo (negativa: di accorciamento)
             else
-                % si ha una rottura lato acciaio, quindi è tenuto fisso eps_inf = eps_su
+                % si ha una rottura lato acciaio, quindi Ã¨ tenuto fisso eps_inf = eps_su
                 rottura_acciaio = 1;
                 eps_inf = obj.epssu; % deformazione ultima dell'accaio (positiva: di allungamento)
             end
@@ -225,47 +225,47 @@ classdef MchiNstrisce3 < handle
             count = 0;
             if rottura_acciaio == 0
                 % rottura del CLS:
-                eps_infP = obj.epssu; % deformazione ultima dell'acciaio (non può essere maggiore)
-                eps_infN = obj.epscu; % deformazione ultima del calcestruzzo (non può essere minore)
+                eps_infP = obj.epssu; % deformazione ultima dell'acciaio (non puÃ² essere maggiore)
+                eps_infN = obj.epscu; % deformazione ultima del calcestruzzo (non puÃ² essere minore)
                 while ((abs(err(2)) > abs(0.0001 * N + 1e-18)) || (abs(eps_infP-eps_infN) > abs(0.0001*eps_infN))) % +1e-18 serve per non creare errori per N=0)
                     eps_infM = (eps_infP + eps_infN) / 2; % epsilon medio tra i due estremi (risparmio tre calcoli per ogni iterazione al costo di aggiungere una variabile)
                     err = [(obj.setStrain(eps_infN,eps_sup) - N) (obj.setStrain(eps_infM,eps_sup) - N) (obj.setStrain(eps_infP,eps_sup) - N)];
                     if err(2) > 0
-                        % la risultante è tra err(1) e err(2) (eps_infN è corretto)
+                        % la risultante Ã¨ tra err(1) e err(2) (eps_infN Ã¨ corretto)
                         eps_infP = eps_infM;
                     else
-                        % la risultante è tra err(2) e err(3) (eps_infP è corretto)
+                        % la risultante Ã¨ tra err(2) e err(3) (eps_infP Ã¨ corretto)
                         eps_infN = eps_infM;
                     end
                     count = count + 1;
-                    if count > 10000; error('MchiNstrisce non è arrivato a convergenza'); end
+                    if count > 10000; error('MchiNstrisce non Ã¨ arrivato a convergenza'); end
                 end
                 eps_inf = eps_infM;
             else
                 % rottura dell'acciaio:
                 eps_supP = 0; % potrebbe essere maggiore, potrebbe essere la deformazione di snervamento dell'acciaio
-                eps_supN = obj.epscu; % deformazione ultima del calcestruzzo (non può essere minore)
+                eps_supN = obj.epscu; % deformazione ultima del calcestruzzo (non puÃ² essere minore)
                 while ((abs(err(2)) > abs(0.0001 * N + 1e-18)) || (abs(eps_supP-eps_supN) > abs(0.0001*eps_supN))) % +1e-18 serve per non creare errori per N=0)
                     eps_supM = (eps_supP + eps_supN) / 2; % epsilon medio tra i due estremi (risparmio tre calcoli per ogni iterazione al costo di aggiungere una variabile)
                     err = [(obj.setStrain(eps_inf,eps_supN) - N) (obj.setStrain(eps_inf,eps_supM) - N) (obj.setStrain(eps_inf,eps_supP) - N)];
                     if err(2) > 0
-                        % la risultante è tra err(1) e err(2) (eps_supN è corretto)
+                        % la risultante Ã¨ tra err(1) e err(2) (eps_supN Ã¨ corretto)
                         eps_supP = eps_supM;
                     else
-                        % la risultante è tra err(2) e err(3) (eps_supP è corretto)
+                        % la risultante Ã¨ tra err(2) e err(3) (eps_supP Ã¨ corretto)
                         eps_supN = eps_supM;
                     end
                     count = count + 1;
                     if count > 9000
                         disp('sta per fallire');
                     end
-                    if count > 10000; error('MchiNstrisce non è arrivato a convergenza'); end
+                    if count > 10000; error('MchiNstrisce non Ã¨ arrivato a convergenza'); end
                 end
                 eps_sup = eps_supM;
             end
             
             [~,M] = obj.setStrain(eps_inf,eps_sup);
-            phi = (eps_inf-eps_sup)/obj.H; % compressione: negativa (la fibra superiore è compressa) IN REALTà è IL CONTRARIO (NEGATIVA)
+            phi = (eps_inf-eps_sup)/obj.H; % compressione: negativa (la fibra superiore Ã¨ compressa) IN REALTÃ  Ã¨ IL CONTRARIO (NEGATIVA)
             yn = -eps_sup/(eps_inf-eps_sup) * obj.H; % yn definito partendo all'"alto"
             M = -M; % convenzione italiana
         end
@@ -319,7 +319,7 @@ classdef MchiNstrisce3 < handle
             chi = linspace(0,chi_max,N_punti);
             M   = zeros(1,N_punti);
             
-            for i=2:(N_punti) % parte da 2 perchè così M(0) = 0 (altrimenti non lo è per problemi numerici...)
+            for i=2:(N_punti) % parte da 2 perchÃ¨ cosÃ¬ M(0) = 0 (altrimenti non lo Ã¨ per problemi numerici...)
                 err   = 1;
                 eps0  = 0;
                 count = 0;
@@ -336,7 +336,7 @@ classdef MchiNstrisce3 < handle
                     if eps0 ~= 0; err = abs((eps0 - eps0_old)/eps0); else; err = abs(eps0 - eps0_old); end
                     count = count + 1;
                     if count > 100 || derivata == 0
-%                         error('MchiN non è arrivato a convergenza');
+%                         error('MchiN non Ã¨ arrivato a convergenza');
                         logFile('MchiN::curvaMchi2: Newton-Raphson non va bene, calcolo con la bisezione...');
                         bisez = 1;
                         break;
@@ -344,9 +344,9 @@ classdef MchiNstrisce3 < handle
                 end
                 if bisez
                     % cerca il range di laboro per la bisezione:
-                    eps0_min = obj.epscu; % non può essere minore di questo
+                    eps0_min = obj.epscu; % non puÃ² essere minore di questo
                     eps0_max = obj.epscu;
-                    Nint = obj.Fint(eps0_max,chi(i)); % ATTENZIONE: se la curvatura è elevata questo potrebbe essere maggiore di N (in tutti gli altri casi DOVREBBE essere MINORE)
+                    Nint = obj.Fint(eps0_max,chi(i)); % ATTENZIONE: se la curvatura Ã¨ elevata questo potrebbe essere maggiore di N (in tutti gli altri casi DOVREBBE essere MINORE)
                     if Nint < N
                         while Nint < N
                             eps0_max = eps0_max + 0.0001;
@@ -357,7 +357,7 @@ classdef MchiNstrisce3 < handle
                             eps0_max = eps0_max + 0.000001;
                             Nint = obj.Fint(eps0_max,chi(i));
                             if eps0_max > obj.epssu
-                                % C'è QUALCOSA CHE NON VA PROPRIO
+                                % C'Ã¨ QUALCOSA CHE NON VA PROPRIO
                                 disp('ERRORE nella ricerca del range per la bisezione (per Nint > N)');
                                 logFile('MchiN::curvaMchi2::bisezione: ERRORE nella ricerca del range per la bisezione (per Nint > N)');
                                 M(i) = 0;
@@ -365,7 +365,7 @@ classdef MchiNstrisce3 < handle
                             end
                         end
                     end
-%                     eps0_max = eps0_max + 0.0001; %aumenta eps0_max per motivi numerici (così gli estremi dell'intervallo sono più distanti dal punto)
+%                     eps0_max = eps0_max + 0.0001; %aumenta eps0_max per motivi numerici (cosÃ¬ gli estremi dell'intervallo sono piÃ¹ distanti dal punto)
                     % esegue la bisezione:
                     count = 0;
                     Ntot = [1 1 1];
@@ -383,7 +383,7 @@ classdef MchiNstrisce3 < handle
                         count = count + 1;
                         if count > 100
                             disp('ERRORE'); logFile('MchiN::curvaMchi2::bisezione: ERRORE convergenza');
-%                             error('MchiN non è arrivato a convergenza');
+%                             error('MchiN non Ã¨ arrivato a convergenza');
                             eps0_max = eps0_min; % si INVENTA un risultato (tanto un punto solo toppato non influenza molto la ricerca di chi_y tramite minimi quadrati)
                             Ntot = 0; % USCITA FORZATA
                         end
@@ -409,7 +409,7 @@ classdef MchiNstrisce3 < handle
             chi = linspace(0,chi_max,N_punti);
             M   = zeros(1,N_punti);
             
-            for i=2:(N_punti) % parte da 2 perchè così M(0) = 0 (altrimenti non lo è per problemi numerici...)
+            for i=2:(N_punti) % parte da 2 perchÃ¨ cosÃ¬ M(0) = 0 (altrimenti non lo Ã¨ per problemi numerici...)
                 err   = 1; % variabile di errore (per il test di convergenza)
                 eps0  = 0; % punto iniziale
                 count = 0; % contatore che monitora il caso in cui va in loop infinito
@@ -444,7 +444,7 @@ classdef MchiNstrisce3 < handle
                         [~,i_min] = min(Nint);
                         [~,i_max] = max(Nint);
                         if (Nint(i_min)<N && Nint(i_max)>N); break; end %ha trovato il range
-                        % altrimenti continua finchè non è discretizzato a sufficienza
+                        % altrimenti continua finchÃ¨ non Ã¨ discretizzato a sufficienza
                     end
                     if (Nint(i_min)>N || Nint(i_max)<N)
                         % se alla fine del for non ha ancora trovato il
@@ -479,7 +479,7 @@ classdef MchiNstrisce3 < handle
                         count = count + 1;
                         if count > 100
                             logFile('MchiN::curvaMchi3::bisezione: ERRORE convergenza');
-                            error('MchiN::curvaMchi3::bisezione: non è arrivato a convergenza');
+                            error('MchiN::curvaMchi3::bisezione: non Ã¨ arrivato a convergenza');
                         end
                     end
                 end
@@ -509,7 +509,7 @@ classdef MchiNstrisce3 < handle
             P0 = [chiu/3 3/4*Mu]; % parametri iniziali di prova
             model = @(P,x) (P(2)/P(1)*x).*heaviside(P(1)-x) + ((Mu-P(2))/(chiu-P(1))*(x-P(1))+P(2)).*heaviside(x-P(1)); % crea il modello da fittare
             lb = [0 0]; % lower bound (non ci possono essere valori negativi)
-            ub = [chiu Mu]; % upper bound (il punto di snervamento non può essere maggiore di quello ultimo)
+            ub = [chiu Mu]; % upper bound (il punto di snervamento non puÃ² essere maggiore di quello ultimo)
             options = optimoptions('lsqcurvefit','Display','off');
             Pfit = lsqcurvefit(model,P0,chi,M,lb,ub,options); % fitta il modello minimizzando i quadrati
             chiy = Pfit(1);
@@ -538,7 +538,7 @@ classdef MchiNstrisce3 < handle
             P0 = [chiu/3 3/4*Mu]; % parametri iniziali di prova
             model = @(P,x) (P(2)/P(1)*x).*heaviside(P(1)-x) + ((Mu-P(2))/(chiu-P(1))*(x-P(1))+P(2)).*heaviside(x-P(1)); % crea il modello da fittare
             lb = [0 0]; % lower bound (non ci possono essere valori negativi)
-            ub = [chiu Mu]; % upper bound (il punto di snervamento non può essere maggiore di quello ultimo)
+            ub = [chiu Mu]; % upper bound (il punto di snervamento non puÃ² essere maggiore di quello ultimo)
             options = optimoptions('lsqcurvefit','Display','off');
             Pfit = lsqcurvefit(model,P0,chi,M,lb,ub,options); % fitta il modello minimizzando i quadrati
             chiy = Pfit(1);
@@ -583,7 +583,7 @@ classdef MchiNstrisce3 < handle
             if nargin < 7; c = 0.03; end
             Ac = b*h; % area calcestruzzo
             Ab = pi/4 * db^2; % area della barra
-            np = max(round((h-2*c)/0.3-1), 0); % numero di armature di parete (non ci può essere in interferro maggiore di 30 cm tra esse) [maggiore uguale a zero..]
+            np = max(round((h-2*c)/0.3-1), 0); % numero di armature di parete (non ci puÃ² essere in interferro maggiore di 30 cm tra esse) [maggiore uguale a zero..]
             n2 = round(Ac*rhotot/Ab * rhoc_rhotot); % numero di armature superiori (compresse)            
             n1 = round(Ac*rhotot/Ab - n2 - 2*np);  % numero di armature inferiori (tese)
             
@@ -607,7 +607,7 @@ classdef MchiNstrisce3 < handle
             % inizializza una sezione circolare
             if nargin < 5; c = 0.03; end
             AreaBarra = pi/4 * db^2;
-            numeroBarre = round(rhotot * (D/db)^2); % (D/db)^2 invece di (D^2)/(db^2) per problemi numerici se db è piccolo?
+            numeroBarre = round(rhotot * (D/db)^2); % (D/db)^2 invece di (D^2)/(db^2) per problemi numerici se db Ã¨ piccolo?
             
             hs = min(D/10, obj.hmax); % il minimo per evitare problemi se hmax < D/50
             
@@ -702,13 +702,13 @@ classdef MchiNstrisce3 < handle
             b = obj.layer(i,3);
             t = obj.layer(i,4);
             
-            % modifica il vecchio layer dividendolo nella metà inferiore:
+            % modifica il vecchio layer dividendolo nella metÃ  inferiore:
             obj.layer(i,:) = [y, 0.5*h, b, 0.5*(b+t)];
-            % aggiunge il nuovo layer nella metà superiore:
+            % aggiunge il nuovo layer nella metÃ  superiore:
             newLayer = [y+0.5*h, 0.5*h, 0.5*(b+t), t];
             obj.layer = [obj.layer(1:i,:); newLayer; obj.layer(i+1:end,:)];
             
-            % ricalcola le proprietà per i due layers appena creati:
+            % ricalcola le proprietÃ  per i due layers appena creati:
             Areal = 0.5 * obj.layer(i,2) * (obj.layer(i,3) + obj.layer(i,4));
             ygl   = obj.layer(i,1) + obj.layer(i,2)/3 * (1+obj.layer(i,4)/(obj.layer(i,3)+obj.layer(i,4)));
             obj.layersProp(i,:) = [Areal, ygl];
@@ -723,8 +723,8 @@ classdef MchiNstrisce3 < handle
 		% function [eps0,chi] = findEquilibrium(obj,N,M)
             % %trova il profilo di deformazione che equilibria le azione
             % %esterne N e M. Ha l'ipotesi di sezion piane che rimangono
-            % %piane anche dopo la deformazione quindi eps0 è la deformazione
-            % %in corrispondenza della fibra baricentrica e chi è la
+            % %piane anche dopo la deformazione quindi eps0 Ã¨ la deformazione
+            % %in corrispondenza della fibra baricentrica e chi Ã¨ la
             % %curvatura.
             % %usa il metodo di Newton-Raphson
             
@@ -754,21 +754,21 @@ classdef MchiNstrisce3 < handle
 		% function [M,phi,yn] = ultimatePoint(obj, N)
             % %calcola il momento e la curvatura ultimi
             
-            % if abs(N) > obj.fy*obj.Area; error('la sezione non può resistere a tale sforzo'); end
+            % if abs(N) > obj.fy*obj.Area; error('la sezione non puÃ² resistere a tale sforzo'); end
             
-            % % fissato lo eps_top = epscu cambia eps_top fino a trovare N corretto (se la rottura è lato CLS)
+            % % fissato lo eps_top = epscu cambia eps_top fino a trovare N corretto (se la rottura Ã¨ lato CLS)
             % eps_sup = obj.epscu;
             
             % %trova un range per fare la bisezione:
             % count = 0;
             % eps_infP = obj.epscu; %l'ho scelto io sta sicuramente qua dentro...
-            % eps_infN = obj.epscu; %in questo intevallo (non può essere più compresso di così)
+            % eps_infN = obj.epscu; %in questo intevallo (non puÃ² essere piÃ¹ compresso di cosÃ¬)
             % eps_supP = obj.epscu; %nel caso si ha la rottura lato acciaio la bisezione va fatta sulla eps_sup
             % eps_supN = obj.epscu;
             % rottura_acciaio = 0;
             % while obj.setStrain(eps_infP,eps_supP) < N
                 % eps_infP = eps_infP + 0.0001;
-                % %l'acciaio è arrivato a rottura, quindi si ha una rottura lato acciaio
+                % %l'acciaio Ã¨ arrivato a rottura, quindi si ha una rottura lato acciaio
                 % if eps_infP > obj.epssu
                     % eps_infP = obj.epssu; %fissa eps_inf
                     % eps_inf = eps_infP; %usa un solo eps_inf (fissato) per non confondere le idee...
@@ -776,7 +776,7 @@ classdef MchiNstrisce3 < handle
                     % rottura_acciaio = 1;
                 % end
                 % count = count + 1;
-                % if count > 1000; error('MchiNstrisce non è arrivato a convergenza'); end
+                % if count > 1000; error('MchiNstrisce non Ã¨ arrivato a convergenza'); end
             % end
 % %             if rottura_acciaio; warning('rottura lato acciaio'); end
             % if rottura_acciaio; logFile('MchiN::ultimatePoint: rottura lato acciaio'); end
@@ -789,14 +789,14 @@ classdef MchiNstrisce3 < handle
                 % while ((abs(err(2)) > abs(0.000001 * N)) || (abs(eps_infP-eps_infN) > abs(0.0001*eps_infN))) %+0.000001 serve per non creare errori per N=0)
                     % err = [(obj.setStrain(eps_infP,eps_sup) - N) (obj.setStrain((eps_infP+eps_infN)/2,eps_sup) - N) (obj.setStrain(eps_infN,eps_sup) - N)];
                     % if err(1)*err(2) < 0
-                        % %la risultante è tra err(1) e err(2) (eps_infP è corretto)
+                        % %la risultante Ã¨ tra err(1) e err(2) (eps_infP Ã¨ corretto)
                         % eps_infN = (eps_infP+eps_infN)/2;
                     % else
-                        % %la risultante è tra err(2) e err(3) (eps_infN è corretto)
+                        % %la risultante Ã¨ tra err(2) e err(3) (eps_infN Ã¨ corretto)
                         % eps_infP = (eps_infP+eps_infN)/2;
                     % end
                     % count = count + 1;
-                    % if count > 10000; error('MchiNstrisce non è arrivato a convergenza'); end
+                    % if count > 10000; error('MchiNstrisce non Ã¨ arrivato a convergenza'); end
                 % end
                 % eps_inf = (eps_infP+eps_infN)/2;
             % else
@@ -804,23 +804,23 @@ classdef MchiNstrisce3 < handle
                 % while ((abs(err(2)) > abs(0.000001 * N)) || (abs(eps_supP-eps_supN) > abs(0.0001*eps_supN))) %+0.000001 serve per non creare errori per N=0)
                     % err = [(obj.setStrain(eps_inf,eps_supP) - N) (obj.setStrain(eps_inf,(eps_supP+eps_supN)/2) - N) (obj.setStrain(eps_inf,eps_supN) - N)];
                     % if err(1)*err(2) < 0
-                        % %la risultante è tra err(1) e err(2) (eps_supP è corretto)
+                        % %la risultante Ã¨ tra err(1) e err(2) (eps_supP Ã¨ corretto)
                         % eps_supN = (eps_supP+eps_supN)/2;
                     % else
-                        % %la risultante è tra err(2) e err(3) (eps_supN è corretto)
+                        % %la risultante Ã¨ tra err(2) e err(3) (eps_supN Ã¨ corretto)
                         % eps_supP = (eps_supP+eps_supN)/2;
                     % end
                     % count = count + 1;
                     % if count > 9000
                         % disp('sta per fallire');
                     % end
-                    % if count > 10000; error('MchiNstrisce non è arrivato a convergenza'); end
+                    % if count > 10000; error('MchiNstrisce non Ã¨ arrivato a convergenza'); end
                 % end
                 % eps_sup = (eps_supP+eps_supN)/2;
             % end
             
             % [~,M] = obj.setStrain(eps_inf,eps_sup);
-            % phi = (eps_inf-eps_sup)/obj.H; %compressione: negativa (la fibra superiore è compressa)
+            % phi = (eps_inf-eps_sup)/obj.H; %compressione: negativa (la fibra superiore Ã¨ compressa)
             % yn = -eps_sup/(eps_inf-eps_sup) * obj.H;
             % M = -M; %convenzione italiana
         % end
@@ -834,8 +834,8 @@ end
 
 
 function [N,M] = controllaLayer(sez, eps_inf, eps_sup, i)
-    % funzione che controlla il layer e se non è verificato lo divide
-    % ricorsivamente finchè la distribuzione degli sforzi approssimati
+    % funzione che controlla il layer e se non Ã¨ verificato lo divide
+    % ricorsivamente finchÃ¨ la distribuzione degli sforzi approssimati
     % all'ordine zero non sono come quelli reali
     
     tol_layers = 0.01; % tolleranza sul controllo dei layers
@@ -850,15 +850,15 @@ function [N,M] = controllaLayer(sez, eps_inf, eps_sup, i)
     err_sup = (sigma_bar - sigma_sup) * sez.layer(i,4);
     
     % controllo sul layer (t e b devono essere diverse da zero [almeno uno dei due])
-%     if sigma_bar == 0; err = abs(err_inf)+abs(err_sup); else; err = (abs(err_inf)+abs(err_sup))/(sigma_bar*0.5*(sez.layer(i,3)+sez.layer(i,4))); end %questa condizione non mi piace molto perché è più restrittiva vicino all'asse neutro, dove non ce n'è bisogno...
+%     if sigma_bar == 0; err = abs(err_inf)+abs(err_sup); else; err = (abs(err_inf)+abs(err_sup))/(sigma_bar*0.5*(sez.layer(i,3)+sez.layer(i,4))); end %questa condizione non mi piace molto perchÃ© Ã¨ piÃ¹ restrittiva vicino all'asse neutro, dove non ce n'Ã¨ bisogno...
     if sez.fc == 0; err = abs(err_inf)+abs(err_sup); else; err = (abs(err_inf)+abs(err_sup))/(sez.fc); end %ACCROCCO
     if abs(err) > tol_layers
         % non ha passato il controllo e divide i layers
         sez.dividiLayer(i); %divide il layer in due
         [N1,M1] = controllaLayer(sez,eps_inf,eps_sup,i);
-        [N2,M2] = controllaLayer(sez,eps_inf,eps_sup,i+1); % RISUDDIVISI I LAYERS NON è PIù i+1..........!!!!!!
+        [N2,M2] = controllaLayer(sez,eps_inf,eps_sup,i+1); % RISUDDIVISI I LAYERS NON Ã¨ PIÃ¹ i+1..........!!!!!!
         N = N1 + N2;
-        M = M1 + M2 + (N1-N2)*sez.layer(i,2); % l'altezza del layer diviso è hi/2
+        M = M1 + M2 + (N1-N2)*sez.layer(i,2); % l'altezza del layer diviso Ã¨ hi/2
     else
         N = sigma_bar * sez.layersProp(i,1);
         M = 0;
@@ -893,7 +893,7 @@ end
 
 function sigma = ParabRett(eps,epsy,epsu,smax)
     %legame costitutivo CLS NTC2018
-    %eps è negativo di compressione
+    %eps Ã¨ negativo di compressione
     
 %     epsy = -0.0020;
 %     epsu = -0.0035;
@@ -914,11 +914,10 @@ end
 
 % TODO:
 % -----
-%   1)  nella funzione "initgeo" va inizializzata la sezione OMOGENEIZZATA
-%   2)  modificare "yieldingPoint" 
-%   3)  la curvatura in curvaMchi è negativa se comprime le fibre superiori
-%   4)  controllare la sezione CIRCOLARE!! (mi pare che veniva diversa da VcaSLU, controllare...)
-%   5)  
+%   - nella funzione "initgeo" va inizializzata la sezione OMOGENEIZZATA
+%   - modificare "yieldingPoint" 
+%   - la curvatura in curvaMchi Ã¨ negativa se comprime le fibre superiori
+%   - 
 
 
 
