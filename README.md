@@ -13,3 +13,6 @@ Ogni volta che pubblico una release cancello questo ToDo, in maniera da tenere t
 - [ ] Controllare attentamente le procedure di analisi nonlineare (per la generazione della curva _momento-curvatura_ e per l'analisi del punto di stato ultimo).
 - [ ] Migliorare l'implementazione dei materiali (due definizioni delle equazioni nonlineari e dei parametri separatamente non e' per niente modulare)
 - [ ] Implementare la procedura `integrateStrain` in cui la discretizzazione in strisce cambia al variare dello stato tensionale nella sezione. _(Questa feature gia' fa riferimento alla versione 2.0 dello script, e' una modifica sostanziale)_
+- [ ] nella funzione `initgeo` va inizializzata la sezione **OMOGENEIZZATA**
+- [ ] modificare `yieldingPoint`
+- [ ] la curvatura in `curvaMchi` è negativa se comprime le fibre superiori _(modifica per la versione 2.0)_
