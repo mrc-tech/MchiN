@@ -12,4 +12,4 @@ Ogni volta che pubblico una release cancello questo ToDo, in maniera da tenere t
 - [ ] eliminare i metodi e le funzioni inutili per i calcoli che deve fare la classe
 - [ ] Controllare attentamente le procedure di analisi nonlineare (per la generazione della curva _momento-curvatura_ e per l'analisi del punto di stato ultimo).
 - [ ] Migliorare l'implementazione dei materiali (due definizioni delle equazioni nonlineari e dei parametri separatamente non e' per niente modulare)
-- [ ] Implementare la procedura `integrateStrain` in cui la discretizzazione in strisce cambia al variare dello stato tensionale nella sezione.
+- [ ] Implementare la procedura `integrateStrain` in cui la discretizzazione in strisce cambia al variare dello stato tensionale nella sezione. _(Questa feature gia' fa riferimento alla versione 2.0 dello script, e' una modifica sostanziale)_
