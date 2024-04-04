@@ -4,8 +4,10 @@
 %                          +-------------------+
 %                          Autore: Andrea Marchi
 %                              Versione: 1.7
-%                                09/01/2024
+%                               09 Gen 2024
 %
+% Ogni volta che modifico qualcosa nel codice aggiorno il log e aumento il
+% numero di version_minor.
 % In fondo al documento sono presenti il ToDo e il ChangeLog.
 % Questa classe è basata sul codice "SeReS_strisce" di Andrea Marchi.
 % ########################################################################
